@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR | Image Text Extractor</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <h1>Image Text Extractor</h1>
+    <p>Paste or upload a picture</p>
+    <input type="file" id="fileInput" accept="image/*">
+    <br><br>
+    <img id="uploadedImage" style="display:none; max-width: 50%; height: auto;">
+    <p id="processingMessage" style="display:none;">Processing image, please wait...</p>
+    <textarea id="textOutput" rows="10" cols="50" style="display:none;"></textarea>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadedImage = document.getElementById('uploadedImage');
+        const textOutput = document.getElementById('textOutput');
+        const processingMessage = document.getElementById('processingMessage');
+
+        fileInput.addEventListener('change', event => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    uploadedImage.src = reader.result;
+                    uploadedImage.style.display = 'block';
+                    extractText(uploadedImage.src);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.addEventListener('paste', event => {
+            const items = event.clipboardData.items;
+            for (let item of items) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        uploadedImage.src = reader.result;
+                        uploadedImage.style.display = 'block';
+                        extractText(uploadedImage.src);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
+        function extractText(imageSrc) {
+            processingMessage.style.display = 'block';
+            textOutput.style.display = 'none';
+            textOutput.value = '';
+            Tesseract.recognize(
+                imageSrc,
+                'eng',
+                {
+                    logger: m => console.log(m)
+                }
+            ).then(({ data: { text } }) => {
+                processingMessage.style.display = 'none';
+                textOutput.style.display = 'block';
+                textOutput.value = text;
+                textOutput.focus();
+                textOutput.select();
+            }).catch(err => {
+                processingMessage.style.display = 'none';
+                textOutput.style.display = 'block';
+                textOutput.value = 'Error during text recognition: ' + err;
+                textOutput.focus();
+                textOutput.select();
+                console.error('Error during text recognition: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
+
